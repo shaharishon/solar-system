@@ -5,14 +5,14 @@ const TEX = 256;
 const RING_TILT = -0.42;
 
 const planets = [
-  { name: "Mercury", radius: 8, orbit: 78, speed: 0.82, spin: 0.35, paint: paintMercury, glow: "rgba(190,180,160,0.25)" },
-  { name: "Venus", radius: 12, orbit: 118, speed: 0.62, spin: 0.12, paint: paintVenus, glow: "rgba(230,200,140,0.35)" },
-  { name: "Earth", radius: 13, orbit: 164, speed: 0.5, spin: 0.55, paint: paintEarth, glow: "rgba(120,180,255,0.4)", atmosphere: "rgba(150, 205, 255, 0.7)" },
-  { name: "Mars", radius: 10, orbit: 210, speed: 0.4, spin: 0.5, paint: paintMars, glow: "rgba(210,100,70,0.28)" },
-  { name: "Jupiter", radius: 28, orbit: 286, speed: 0.22, spin: 0.9, paint: paintJupiter, glow: "rgba(220,180,130,0.22)" },
-  { name: "Saturn", radius: 24, orbit: 378, speed: 0.16, spin: 0.8, paint: paintSaturn, glow: "rgba(230,210,160,0.22)", rings: true },
-  { name: "Uranus", radius: 16, orbit: 458, speed: 0.11, spin: 0.4, paint: paintUranus, glow: "rgba(150,230,220,0.25)" },
-  { name: "Neptune", radius: 16, orbit: 530, speed: 0.09, spin: 0.45, paint: paintNeptune, glow: "rgba(80,120,230,0.28)" },
+  { name: "Mercury", radius: 8, orbit: 78, speed: 0.82, spin: 0.35, paint: paintMercury, glow: "rgba(190,180,160,0.25)", distance: "57.9 million km", period: "88 Earth days", diameter: "4,879 km", description: "The smallest planet, and the one nearest the Sun. Its cratered surface swings from searing day to freezing night because it barely has an atmosphere." },
+  { name: "Venus", radius: 12, orbit: 118, speed: 0.62, spin: 0.12, paint: paintVenus, glow: "rgba(230,200,140,0.35)", distance: "108.2 million km", period: "225 Earth days", diameter: "12,104 km", description: "A rocky world wrapped in thick yellow clouds. A runaway greenhouse effect makes Venus the hottest planet in the solar system." },
+  { name: "Earth", radius: 13, orbit: 164, speed: 0.5, spin: 0.55, paint: paintEarth, glow: "rgba(120,180,255,0.4)", atmosphere: "rgba(150, 205, 255, 0.7)", distance: "149.6 million km", period: "365.25 days", diameter: "12,742 km", description: "Our home, and the only world known to host life. Liquid oceans, weather, and a protective atmosphere set it apart from its neighbors." },
+  { name: "Mars", radius: 10, orbit: 210, speed: 0.4, spin: 0.5, paint: paintMars, glow: "rgba(210,100,70,0.28)", distance: "227.9 million km", period: "687 Earth days", diameter: "6,779 km", description: "A cold desert world with the solar system’s largest volcano and canyon. Iron-rich dust gives Mars its rusty red color." },
+  { name: "Jupiter", radius: 28, orbit: 286, speed: 0.22, spin: 0.9, paint: paintJupiter, glow: "rgba(220,180,130,0.22)", distance: "778 million km", period: "11.9 Earth years", diameter: "139,820 km", description: "The largest planet, a giant of hydrogen, helium, and storms. Its Great Red Spot is a cyclone that has raged for centuries." },
+  { name: "Saturn", radius: 24, orbit: 378, speed: 0.16, spin: 0.8, paint: paintSaturn, glow: "rgba(230,210,160,0.22)", rings: true, distance: "1.43 billion km", period: "29.5 Earth years", diameter: "116,460 km", description: "A pale gas giant circled by bright rings of ice and rock. The rings stretch hundreds of thousands of kilometers, yet are only tens of meters thick." },
+  { name: "Uranus", radius: 16, orbit: 458, speed: 0.11, spin: 0.4, paint: paintUranus, glow: "rgba(150,230,220,0.25)", distance: "2.87 billion km", period: "84 Earth years", diameter: "50,724 km", description: "An ice giant that spins on its side. Methane in its atmosphere gives Uranus a pale blue-green color and faint rings." },
+  { name: "Neptune", radius: 16, orbit: 530, speed: 0.09, spin: 0.45, paint: paintNeptune, glow: "rgba(80,120,230,0.28)", distance: "4.5 billion km", period: "165 Earth years", diameter: "49,244 km", description: "The most distant planet, and the windiest. Deep blue storms race around this cold ice giant at the edge of the solar system." },
 ];
 
 planets.forEach((planet, index) => {
@@ -459,6 +459,123 @@ function paintNeptune(g, s) {
   }
 }
 
+const info = document.getElementById("info");
+const infoName = document.getElementById("info-name");
+const infoDesc = document.getElementById("info-desc");
+const infoDistance = document.getElementById("info-distance");
+const infoPeriod = document.getElementById("info-period");
+const infoDiameter = document.getElementById("info-diameter");
+
+let selected = null;
+let placed = [];
+const camera = { focusX: 0, focusY: 0, zoom: 1, anchorX: 0.5, anchorY: 0.52 };
+const move = { fromX: 0, fromY: 0, fromZoom: 1, fromAx: 0.5, fromAy: 0.52, t: 1 };
+const view = { focusX: 0, focusY: 0, scale: 1, anchorX: 0.5, anchorY: 0.52, width: 1, height: 1 };
+
+function ease(t) {
+  return t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2;
+}
+
+function focusAnchor(width) {
+  return width < 780 ? { x: 0.5, y: 0.32 } : { x: 0.6, y: 0.4 };
+}
+
+function zoomFor(planet, width, height) {
+  const fit = Math.min(width, height) / 1180;
+  const extent = planet.rings ? planet.radius * 2.5 : planet.radius * 1.65;
+  const span = width < 780
+    ? Math.min(width * 0.32, height * 0.2)
+    : Math.min(width * 0.2, height * 0.22);
+  return Math.max(span, 64) / (extent * fit);
+}
+
+function beginMove() {
+  move.fromX = camera.focusX;
+  move.fromY = camera.focusY;
+  move.fromZoom = camera.zoom;
+  move.fromAx = camera.anchorX;
+  move.fromAy = camera.anchorY;
+  move.t = 0;
+}
+
+function showInfo(planet) {
+  infoName.textContent = planet.name;
+  infoDesc.textContent = planet.description;
+  infoDistance.textContent = planet.distance;
+  infoPeriod.textContent = planet.period;
+  infoDiameter.textContent = planet.diameter;
+  info.classList.add("is-open");
+  info.setAttribute("aria-hidden", "false");
+}
+
+function hideInfo() {
+  info.classList.remove("is-open");
+  info.setAttribute("aria-hidden", "true");
+}
+
+function highlight(name) {
+  document.querySelectorAll(".legend button").forEach((button) => {
+    const on = button.dataset.planet === name;
+    button.classList.toggle("is-selected", on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function focusPlanet(planet) {
+  if (selected === planet && move.t >= 1) return;
+  beginMove();
+  selected = planet;
+  showInfo(planet);
+  highlight(planet.name);
+}
+
+function showOverview() {
+  if (!selected && move.t >= 1) return;
+  beginMove();
+  selected = null;
+  hideInfo();
+  highlight(null);
+}
+
+function worldFromEvent(event) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = event.clientX - rect.left;
+  const sy = event.clientY - rect.top;
+  return {
+    x: view.focusX + (sx - view.width * view.anchorX) / view.scale,
+    y: view.focusY + (sy - view.height * view.anchorY) / view.scale,
+  };
+}
+
+function planetAt(point) {
+  let found = null;
+  let best = Infinity;
+  for (const body of placed) {
+    const reach = Math.max(body.planet.rings ? body.planet.radius * 2.2 : body.planet.radius, 18);
+    const distance = Math.hypot(point.x - body.x, point.y - body.y);
+    if (distance <= reach && distance < best) {
+      found = body.planet;
+      best = distance;
+    }
+  }
+  return found;
+}
+
+document.getElementById("back").addEventListener("click", showOverview);
+document.querySelectorAll(".legend button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const planet = planets.find((item) => item.name === button.dataset.planet);
+    if (planet) focusPlanet(planet);
+  });
+});
+canvas.addEventListener("click", (event) => {
+  const planet = planetAt(worldFromEvent(event));
+  if (planet) focusPlanet(planet);
+});
+canvas.addEventListener("mousemove", (event) => {
+  canvas.style.cursor = planetAt(worldFromEvent(event)) ? "pointer" : "default";
+});
+
 let lastTime = 0;
 
 function frame(time) {
@@ -476,13 +593,7 @@ function frame(time) {
 
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
-  const fit = Math.min(width, height) / 1180;
-  ctx.setTransform(dpr * fit, 0, 0, dpr * fit, width * 0.5 * dpr, height * 0.52 * dpr);
-
-  drawOrbits();
-  drawSun(seconds);
-
-  const placed = planets.map((planet) => {
+  placed = planets.map((planet) => {
     planet.angle += planet.speed * dt;
     planet.rotation += planet.spin * dt;
     return {
@@ -491,8 +602,42 @@ function frame(time) {
       y: Math.sin(planet.angle) * planet.orbit,
     };
   });
-  placed.sort((a, b) => a.y - b.y);
-  for (const item of placed) {
+
+  move.t = Math.min(1, move.t + dt / 0.95);
+  const eased = ease(move.t);
+  const anchor = selected ? focusAnchor(width) : { x: 0.5, y: 0.52 };
+  const targetZoom = selected ? zoomFor(selected, width, height) : 1;
+  const target = selected ? placed.find((body) => body.planet === selected) : { x: 0, y: 0 };
+  camera.focusX = move.fromX + (target.x - move.fromX) * eased;
+  camera.focusY = move.fromY + (target.y - move.fromY) * eased;
+  camera.zoom = move.fromZoom + (targetZoom - move.fromZoom) * eased;
+  camera.anchorX = move.fromAx + (anchor.x - move.fromAx) * eased;
+  camera.anchorY = move.fromAy + (anchor.y - move.fromAy) * eased;
+
+  const fit = Math.min(width, height) / 1180;
+  const scale = fit * camera.zoom;
+  view.focusX = camera.focusX;
+  view.focusY = camera.focusY;
+  view.scale = scale;
+  view.anchorX = camera.anchorX;
+  view.anchorY = camera.anchorY;
+  view.width = width;
+  view.height = height;
+
+  ctx.setTransform(
+    dpr * scale,
+    0,
+    0,
+    dpr * scale,
+    dpr * (width * camera.anchorX - camera.focusX * scale),
+    dpr * (height * camera.anchorY - camera.focusY * scale)
+  );
+
+  drawOrbits();
+  drawSun(seconds);
+
+  const drawOrder = placed.slice().sort((a, b) => a.y - b.y);
+  for (const item of drawOrder) {
     drawPlanet(item.planet, item.x, item.y);
   }
 

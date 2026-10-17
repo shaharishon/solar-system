@@ -14,18 +14,29 @@
       <h1>Solar System</h1>
       <p>Eight worlds, lit by the Sun</p>
     </div>
+    <section class="info" id="info" aria-hidden="true">
+      <p class="eyebrow">Planet</p>
+      <h2 id="info-name"></h2>
+      <p id="info-desc"></p>
+      <dl>
+        <div><dt>Distance from the Sun</dt><dd id="info-distance"></dd></div>
+        <div><dt>Orbital period</dt><dd id="info-period"></dd></div>
+        <div><dt>Diameter</dt><dd id="info-diameter"></dd></div>
+      </dl>
+      <button type="button" id="back">Back to Solar System</button>
+    </section>
   </div>
   <aside class="sidebar" aria-label="Planets">
     <p class="eyebrow">Planets</p>
     <ul class="legend">
-      <li><span style="background:#b7aa9a"></span>Mercury</li>
-      <li><span style="background:#e6c98a"></span>Venus</li>
-      <li><span style="background:#3d7ec4"></span>Earth</li>
-      <li><span style="background:#c45a3a"></span>Mars</li>
-      <li><span style="background:#d7b48a"></span>Jupiter</li>
-      <li><span style="background:#e4d2a8"></span>Saturn</li>
-      <li><span style="background:#8fd8d0"></span>Uranus</li>
-      <li><span style="background:#3d5ec4"></span>Neptune</li>
+      <li><button type="button" data-planet="Mercury"><span style="background:#b7aa9a"></span>Mercury</button></li>
+      <li><button type="button" data-planet="Venus"><span style="background:#e6c98a"></span>Venus</button></li>
+      <li><button type="button" data-planet="Earth"><span style="background:#3d7ec4"></span>Earth</button></li>
+      <li><button type="button" data-planet="Mars"><span style="background:#c45a3a"></span>Mars</button></li>
+      <li><button type="button" data-planet="Jupiter"><span style="background:#d7b48a"></span>Jupiter</button></li>
+      <li><button type="button" data-planet="Saturn"><span style="background:#e4d2a8"></span>Saturn</button></li>
+      <li><button type="button" data-planet="Uranus"><span style="background:#8fd8d0"></span>Uranus</button></li>
+      <li><button type="button" data-planet="Neptune"><span style="background:#3d5ec4"></span>Neptune</button></li>
     </ul>
   </aside>
   <script src="script.js"></script>
